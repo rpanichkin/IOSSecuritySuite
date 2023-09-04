@@ -12,7 +12,7 @@ import Foundation
 internal class DebuggerChecker {
 
     // https://developer.apple.com/library/archive/qa/qa1361/_index.html
-    static func amIDebugged() -> Bool {
+    @inline(__always) static func amIDebugged() -> Bool {
 
         var kinfo = kinfo_proc()
         var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid()]
@@ -26,11 +26,13 @@ internal class DebuggerChecker {
         return (kinfo.kp_proc.p_flag & P_TRACED) != 0
     }
 
-    static func denyDebugger() {
+    @inline(__always) static func denyDebugger() {
 
         // bind ptrace()
         let pointerToPtrace = UnsafeMutableRawPointer(bitPattern: -2)
-        let ptracePtr = dlsym(pointerToPtrace, "ptrace")
+        // ptrace
+        let IUy2I: [UInt8] = [57, 59, 33, 50, 6, 6]
+        let ptracePtr = dlsym(pointerToPtrace, Obfuscator().reveal(key: IUy2I))
         typealias PtraceType = @convention(c) (CInt, pid_t, CInt, CInt) -> CInt
         let ptrace = unsafeBitCast(ptracePtr, to: PtraceType.self)
 
