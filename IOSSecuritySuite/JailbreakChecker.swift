@@ -98,13 +98,13 @@ internal class JailbreakChecker {
     
     // "cydia://" URL scheme has been removed. Turns out there is app in the official App Store
     // that has the cydia:// URL scheme registered, so it may cause false positive
+    // "activator://" URL scheme has been removed for the same reason.
     private static func checkURLSchemes() -> CheckResult {
         let urlSchemes = [
             "undecimus://",
             "sileo://",
             "zbra://",
             "filza://",
-            "activator://"
         ]
         return canOpenUrlFromList(urlSchemes: urlSchemes)
     }
@@ -319,7 +319,7 @@ internal class JailbreakChecker {
     
     private static func checkDYLD() -> CheckResult {
         
-        let suspiciousLibraries = [
+        let suspiciousLibraries: Set<String> = [
             "SubstrateLoader.dylib",
             "SSLKillSwitch2.dylib",
             "SSLKillSwitch.dylib",
@@ -347,18 +347,16 @@ internal class JailbreakChecker {
             "libcycript"
         ]
         
-        for libraryIndex in 0..<_dyld_image_count() {
-            
-            // _dyld_get_image_name returns const char * that needs to be casted to Swift String
-            guard let loadedLibrary = String(validatingUTF8: _dyld_get_image_name(libraryIndex)) else { continue }
-            
-            for suspiciousLibrary in suspiciousLibraries {
-                if loadedLibrary.lowercased().contains(suspiciousLibrary.lowercased()) {
-                    return (false, "Suspicious library loaded: \(loadedLibrary)")
-                }
+        for index in 0..<_dyld_image_count() {
+
+            let imageName = String(cString: _dyld_get_image_name(index))
+
+            // The fastest case insensitive contains check.
+            for library in suspiciousLibraries where imageName.localizedCaseInsensitiveContains(library) {
+                return (false, "Suspicious library loaded: \(imageName)")
             }
         }
-        
+
         return (true, "")
     }
     
