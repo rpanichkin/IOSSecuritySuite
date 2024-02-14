@@ -58,7 +58,7 @@ internal class ReverseEngineeringToolsChecker {
 
     private static func checkDYLD() -> CheckResult {
 
-        let suspiciousLibraries: [[UInt8]] = [
+        let suspiciousLibraries: Set<[UInt8]> = [
             [15, 61, 58, 55, 4, 36, 20, 22, 14, 17, 13], // FridaGadget
             [47, 61, 58, 55, 4], // frida (Needle injects frida-somerandom.dylib)
             [42, 54, 61, 57, 0, 0, 1], // cynject
@@ -70,7 +70,7 @@ internal class ReverseEngineeringToolsChecker {
             let imageName = String(cString: _dyld_get_image_name(index))
 
             // The fastest case insensitive contains check.
-            for library in suspiciousLibraries where imageName.localizedCaseInsensitiveContains(library) {
+            for library in suspiciousLibraries where imageName.localizedCaseInsensitiveContains(Obfuscator().reveal(key: library)) {
                 return (false, "Suspicious library loaded: \(imageName)")
             }
         }
